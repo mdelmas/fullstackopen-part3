@@ -1,9 +1,12 @@
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors');
 
 const app = express();
 
 app.use(express.json());
+app.use(cors());
+app.use(express.static('build'));
 
 // app.use(morgan('tiny'));
 
@@ -63,7 +66,7 @@ app.delete('/api/persons/:id', (request, response) => {
     response.status(204).end();
 });
 
-app.post('/api/persons/:id', (request, response) => {
+app.post('/api/persons', (request, response) => {
     console.log("request.body = ", request.body);
 
     if (!request.body.name || !request.body.number) {
@@ -78,9 +81,9 @@ app.post('/api/persons/:id', (request, response) => {
         });
     }
 
-    const maxId = Math.max(...persons.map(person => person.id));
+    const newId = Math.floor(Math.random() * 100000);
     const newPerson = {
-        id: maxId + 1,
+        id: newId,
         name: request.body.name,
         number: request.body.number
     }
@@ -89,7 +92,7 @@ app.post('/api/persons/:id', (request, response) => {
     response.json(newPerson);
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

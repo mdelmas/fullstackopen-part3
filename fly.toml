@@ -1,0 +1,42 @@
+# fly.toml file generated for bold-snow-4964 on 2023-09-07T14:45:38+02:00
+
+app = "bold-snow-4964"
+kill_signal = "SIGINT"
+kill_timeout = 5
+mounts = []
+processes = []
+
+# infos added
+
+[build]
+
+[env] 
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000 
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+# end of infos added
+
+[[services]]
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
