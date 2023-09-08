@@ -42,7 +42,7 @@ app.use(express.static('build'));
 //     }
 // ]; 
 
-app.get('/info', (request, response) => {
+app.get('/info', (request, response, next) => {
     let requestTime = new Date(Date.now());
 
     Person.find({})
@@ -70,7 +70,7 @@ app.get('/api/persons/:id', (request, response, next) => {
         .then(person => {
             if (!person) {
                 return response.status(404).json({
-                    error: 'Id not found ...'
+                    message: 'Id not found ...'
                 });
             }
 
@@ -91,8 +91,8 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 app.post('/api/persons', (request, response, next) => {
     if (!request.body.name || !request.body.number) {
-        return response.status(404).json({
-            error: 'Content missing!'
+        return response.status(400).json({
+            message: 'Content missing!'
         });
     }
 
@@ -100,7 +100,7 @@ app.post('/api/persons', (request, response, next) => {
         .then((person) => {
             if (person !== null) {
                 return response.status(404).json({
-                    error: 'Name should be unique ...'
+                    message: 'Name should be unique ...'
                 });
             } 
             
@@ -108,40 +108,49 @@ app.post('/api/persons', (request, response, next) => {
                 name: request.body.name,
                 number: request.body.number
             })
-            newPerson.save().then((person) => {
-                response.json(person);
-            });            
+            newPerson.save()
+                .then((person) => {
+                    response.json(person);
+                })
+                .catch(error => next(error));               
             }
         )
         .catch(error => next(error));    
 });
 
-app.put('/api/persons/:id', (request, response) => {
+app.put('/api/persons/:id', (request, response, next) => {
     if (!request.body.name || !request.body.number) {
         return response.status(404).json({
-            error: 'Content missing!'
+            message: 'Content missing!'
         });
     }
 
-    Person.findOneAndUpdate({ name: request.body.name }, { number: request.body.number }, { new: true })
+    Person.findOneAndUpdate(
+        { name: request.body.name }, 
+        { number: request.body.number }, 
+        { new: true, runValidators: true, context: 'query' }
+    )
         .then(person => {
             response.json(person);
         })
-
+        .catch(error => next(error));    
 });
 
 const errorHandler = (error, request, response, next) => {
-    console.log("Error: ", error.message, error);
+    console.log("In error handler ");
+    console.log("Error: ", error.message);
 
     if (error.name === 'CastError') {
-        return response.status(500).json({ error: 'Invalid id...' });
+        return response.status(500).json({ message: 'Invalid id...' });
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ message: error.message });
     }
 
-    response.status(500).end();
+    next(error);
 }
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
